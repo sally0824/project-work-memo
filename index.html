@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>项目工作备忘录</title>
+<style>
+body{font-family:Arial,"Microsoft YaHei",sans-serif;background:#f5f7fa;color:#344054;display:grid;place-items:center;min-height:100vh;margin:0}.loading{background:#fff;border:1px solid #e5e9ef;border-radius:12px;padding:22px 28px;box-shadow:0 8px 28px rgba(16,24,40,.06);line-height:1.8}
+</style>
+</head>
+<body>
+<div class="loading">正在载入项目工作备忘录…</div>
+<script>
+(async()=>{
+  try{
+    const files=['parts/part-01.txt','parts/part-02.txt','parts/part-03.txt','parts/part-04.txt','parts/part-05.txt'];
+    const chunks=await Promise.all(files.map(async f=>{
+      const r=await fetch(f,{cache:'no-store'});
+      if(!r.ok) throw new Error(`${f}: ${r.status}`);
+      return r.text();
+    }));
+    const html=chunks.join('');
+    document.open();
+    document.write(html);
+    document.close();
+  }catch(e){
+    document.body.innerHTML='<div class="loading"><strong>页面载入失败</strong><br><small>'+String(e)+'</small></div>';
+    console.error(e);
+  }
+})();
+</script>
+</body>
+</html>
