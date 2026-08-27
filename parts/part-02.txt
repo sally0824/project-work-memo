@@ -1,0 +1,130 @@
+:1fr}}
+  @media(max-width:500px){.grid.kpi{grid-template-columns:1fr}.search{width:100%}.toolbar{align-items:stretch;flex-direction:column}.toolbar-left,.toolbar-right{width:100%}.toolbar input,.toolbar select{flex:1}}
+  @media print{aside,.topbar,.toolbar,.form-actions,.page-head .btn,.no-print{display:none!important}.app{display:block}.content{padding:0;max-width:none}.page{display:block!important;page-break-after:always}.page#quick,.page#settings{display:none!important}.card{box-shadow:none}.table-wrap{max-height:none;overflow:visible}th{position:static}body{background:#fff}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside id="sidebar">
+    <div class="brand">
+      <h1>项目工作备忘录</h1>
+      <p>一次维护 · 分类选人 · 全周期跟踪</p>
+    </div>
+    <nav id="nav">
+      <button class="nav-btn active" data-page="dashboard"><span class="nav-dot"></span>项目总览</button>
+      <button class="nav-btn" data-page="quick"><span class="nav-dot"></span>快速记一笔</button>
+      <button class="nav-btn" data-page="records"><span class="nav-dot"></span>全过程工作记录</button>
+      <button class="nav-btn" data-page="gantt"><span class="nav-dot"></span>工作推进甘特图</button>
+      <button class="nav-btn" data-page="deliverables"><span class="nav-dot"></span>项目交付物</button>
+      <button class="nav-btn" data-page="contacts"><span class="nav-dot"></span>工作联络人</button>
+      <button class="nav-btn" data-page="documents"><span class="nav-dot"></span>项目资料</button>
+      <button class="nav-btn" data-page="phases"><span class="nav-dot"></span>阶段 / 专题维护</button>
+      <button class="nav-btn" data-page="settings"><span class="nav-dot"></span>项目设置 / 备份</button>
+    </nav>
+    <div class="side-bottom no-print">
+      <button class="btn soft" id="exportJsonSide">导出完整备份</button>
+      <button class="btn" onclick="window.print()">打印 / 导出 PDF</button>
+    </div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div style="display:flex;gap:10px;align-items:center;min-width:0">
+        <button class="btn mobile-toggle" id="mobileToggle">菜单</button>
+        <div class="project-title"><strong id="topProjectName">未设置项目名称</strong><span id="topProjectMeta">先完成项目设置，后续无需重复填写基本信息</span></div>
+      </div>
+      <div class="top-actions">
+        <button class="btn soft hide-mobile" data-jump="quick">+ 快速记录</button>
+        <button class="btn hide-mobile" id="exportCurrent">导出当前表 CSV</button>
+      </div>
+    </header>
+
+    <div class="content">
+      <section class="page active" id="dashboard">
+        <div class="page-head"><div><h2>项目总览</h2><p>从“人天投入、事项推进、交付物、资料获取”四个维度自动汇总，无需另填统计表。</p></div><button class="btn" data-jump="settings">维护项目基本信息</button></div>
+        <div class="notice" id="setupNotice">首次使用建议先在“项目设置”中录入项目名称、客户单位和计划总人天。后续新增工作记录时将自动复用。</div>
+        <div class="grid kpi">
+          <div class="card kpi-card"><div class="kpi-label">项目投入进度</div><div class="kpi-value" id="kpiProgress">0%</div><div class="progress" style="margin-top:10px"><i id="progressBar"></i></div><div class="kpi-sub" id="kpiPersonDays">已投入 0 / 计划 0 人天</div></div>
+          <div class="card kpi-card"><div class="kpi-label">工作事项</div><div class="kpi-value" id="kpiRecords">0</div><div class="kpi-sub" id="kpiRecordSub">推进中 0 · 已完成 0</div></div>
+          <div class="card kpi-card"><div class="kpi-label">项目交付物</div><div class="kpi-value" id="kpiDeliverables">0</div><div class="kpi-sub" id="kpiDeliverableSub">待完成 0 · 已完成 0</div></div>
+          <div class="card kpi-card"><div class="kpi-label">项目资料</div><div class="kpi-value" id="kpiDocs">0</div><div class="kpi-sub" id="kpiDocSub">已获取 0 · 待获取 0</div></div>
+        </div>
+        <div class="grid two" style="margin-top:14px">
+          <div class="card card-pad">
+            <div class="section-title"><div><h3>近期工作事项</h3><p>按日期倒序展示最近 6 条</p></div><button class="btn small" data-jump="records">查看全部</button></div>
+            <div id="recentRecords"></div>
+          </div>
+          <div class="card card-pad">
+            <div class="section-title"><div><h3>需要关注</h3><p>自动识别临期、逾期和未归档事项</p></div></div>
+            <div id="attentionList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="quick">
+        <div class="page-head"><div><h2>快速记一笔</h2><p>高频信息直接展示；成果/输出属于工作记录的主信息，不再藏在补充项中。联系人和阶段均从维护清单中分类选择。</p></div></div>
+        <div class="card quick-form">
+          <form id="quickRecordForm">
+            <div class="form-grid">
+              <div class="field span2"><label class="req">日期</label><input type="date" name="date" required></div>
+              <div class="field span2"><div class="inline-head"><label>阶段 / 专题</label><button class="inline-link" type="button" data-jump="phases">维护</button></div><select name="phase" id="quickPhaseSelect"><option value="">请选择</option></select></div>
+              <div class="field span4"><label class="req">任务 / 事项名称</label><input name="taskName" required placeholder="一句话说明这次做什么"></div>
+              <div class="field span2"><label>当前状态</label><select name="status"><option>推进中</option><option>未启动</option><option>已完成</option><option>暂缓</option></select></div>
+              <div class="field span2"><label>投入人天</label><input name="manDays" type="number" min="0" step="0.1" placeholder="0"></div>
+              <div class="field span8"><label class="req">需求要点 / 工作内容</label><textarea name="content" required placeholder="写清本次工作的需求、处理内容或关键进展。"></textarea></div>
+              <div class="field span4"><div class="inline-head"><label>咨询方责任人</label><button class="inline-link" type="button" data-jump="contacts">维护</button></div><select name="consultingParty" id="quickConsultingSelect"><option value="">请选择</option></select></div>
+              <div class="field span4"><label>任务来源</label><select name="sourceType"><option value="">请选择</option><option>工作通知</option><option>会议要求</option><option>客户需求</option><option>阶段任务安排</option><option>单位/部门部署</option><option>问题整改</option><option>专项督办</option><option>其他</option></select></div>
+              <div class="field span8"><label>来源 / 触发背景</label><input name="source" placeholder="如：根据XX专题会要求推进……"></div>
+              <div class="subhead">成果与交付</div>
+              <div class="field span8"><label>成果 / 输出</label><textarea name="deliverable" placeholder="如：形成《XXX方案》V1、完成访谈纪要、提交数据分析结果等"></textarea></div>
+              <div class="field span4"><label>成果交付日期</label><input type="date" name="deliveryDate"><div class="hint">有明确成果节点时填写；总览会结合项目交付物清单提醒。</div></div>
+            </div>
+            <details class="advanced">
+              <summary>补充信息（计划安排、协作、排期、归档等）</summary>
+              <div class="form-grid">
+                <div class="field span6"><label>计划安排 / 应对策略</label><textarea name="strategy" placeholder="需要形成明确推进安排时再填写"></textarea></div>
+                <div class="field span6"><label>协作事项</label><textarea name="collaboration" placeholder="如：业主方提供资料；咨询方汇总；系统方完成配置"></textarea></div>
+                <div class="field span4"><label>业主方协作人</label><select name="clientParty" id="quickClientSelect"><option value="">请选择</option></select></div>
+                <div class="field span4"><label>系统方协作人</label><select name="systemParty" id="quickSystemSelect"><option value="">请选择</option></select></div>
+                <div class="field span4"><label>是否归档</label><select name="archive"><option value="未归档">未归档</option><option value="已归档">已归档</option><option value="无需归档">无需归档</option></select></div>
+                <div class="field span4"><label>计划开始</label><input type="date" name="planStart"></div>
+                <div class="field span4"><label>计划结束</label><input type="date" name="planEnd"></div>
+                <div class="field span4"><label>实际完成</label><input type="date" name="actualEnd"></div>
+                <div class="field span4"><label>完成度</label><input type="number" name="completion" min="0" max="100" step="5" placeholder="0-100"></div>
+                <div class="field span8"><label>工作照片 / 其他备注</label><input name="photo" placeholder="建议填写文件名或存放路径，不在网页中上传大文件"></div>
+              </div>
+            </details>
+            <div class="form-actions"><button type="reset" class="btn">清空</button><button type="submit" class="btn primary">保存工作记录</button></div>
+          </form>
+        </div>
+      </section>
+
+      <section class="page" id="records">
+        <div class="page-head"><div><h2>项目全过程工作记录</h2><p>保留原模板全部信息，但日常查看只显示关键列；点击“详情/编辑”再看完整内容。</p></div><button class="btn primary" data-jump="quick">+ 新增记录</button></div>
+        <div class="card table-card">
+          <div class="toolbar"><div class="toolbar-left"><input class="search" id="recordSearch" placeholder="搜索事项、阶段、责任人…"><select id="recordStatusFilter"><option value="">全部状态</option><option>未启动</option><option>推进中</option><option>已完成</option><option>暂缓</option></select></div><div class="toolbar-right"><span class="muted" id="recordCountText"></span><button class="btn small" data-export="records">导出 CSV</button></div></div>
+          <div class="table-wrap"><table><thead><tr><th>日期</th><th>阶段/专题</th><th>任务/事项</th><th>工作内容</th><th>责任人</th><th>状态</th><th>交付日期</th><th>人天</th><th>归档</th><th>操作</th></tr></thead><tbody id="recordsBody"></tbody></table></div>
+        </div>
+      </section>
+
+      <section class="page" id="gantt">
+        <div class="page-head"><div><h2>项目全周期甘特图</h2><p>以项目计划起止日期为总周期，同时叠加阶段/专题、工作事项和交付节点；各层数据均来自现有维护项，不再单独重复填一张甘特表。</p></div><div style="display:flex;gap:8px"><button class="btn" data-jump="phases">维护阶段</button><button class="btn" data-jump="records">维护工作记录</button></div></div>
+        <div class="card">
+          <div class="toolbar"><div class="legend"><span><i class="project"></i>项目周期</span><span><i class="phase"></i>阶段/专题</span><span><i class="p"></i>事项计划</span><span><i class="a"></i>完成进度</span><span><i class="m"></i>交付/完成节点</span></div><div class="toolbar-right"><select id="ganttScale" style="width:116px"><option value="auto">自动刻度</option><option value="week">按周</option><option value="month">按月</option></select><div class="muted" id="ganttRangeText"></div></div></div>
+          <div class="gantt-wrap" id="ganttContainer"></div>
+        </div>
+      </section>
+
+      <section class="page" id="deliverables">
+        <div class="page-head"><div><h2>项目交付物清单</h2><p>对应原“项目交付物清单”，增加状态字段，便于总览页自动判断待交付事项。</p></div><button class="btn primary" data-add="deliverable">+ 新增交付物</button></div>
+        <div class="card table-card"><div class="toolbar"><div class="toolbar-left"><input class="search" id="deliverableSearch" placeholder="搜索内容或交付物…"></div><div class="toolbar-right"><button class="btn small" data-export="deliverables">导出 CSV</button></div></div><div class="table-wrap"><table><thead><tr><th>序号</th><th>主要项目内容</th><th>交付物</th><th>成果形式</th><th>数量</th><th>交付时间</th><th>状态</th><th>操作</th></tr></thead><tbody id="deliverablesBody"></tbody></table></div></div>
+      </section>
+
+      <section class="page" id="contacts">
+        <div class="page-head"><div><h2>工作联络清单</h2><p>联系人只维护一次，工作记录里直接选择，不再反复输入姓名、单位和角色。</p></div><button class="btn primary" data-add="contact">+ 新增联系人</button></div>
+        <div class="card table-card"><div class="toolbar"><div class="toolbar-left"><input class="search" id="contactSearch" placeholder="搜索姓名、单位、角色…"></div><div class="toolbar-right"><button class="btn small" data-export="contacts">导出 CSV</button></div></div><div class="table-wrap"><table><thead><tr><th>序号</th><th>参与方</th><th>所属单位/部门</th><th>姓名</th><th>联系方式</th><th>项目职务</th><th>备注</th><th>操作</th></tr></thead><tbody id="contactsBody"></tbody></table></div></div>
+      </section>
+
+      <section class="page" id="documents">
+        <div class="page-head"><div><h2>项目资料清单</h2><p>用“已获取/待获取”直接管理资料状态，可按关键词检索。</p></div><button class="btn primary" data-add="document">+ 新增资料</button></div>
+        <div class="card table-card"><div class="toolbar"><div class="toolbar-left"><input class="search" id="documentSearch" placeholder="搜索文件名、关键词…"><select id="documentFilter"><option value="">全部</option><option value="已获取">已获取</option><option value="待获取">待获取</option></select></div><div class="toolbar-right"><b
