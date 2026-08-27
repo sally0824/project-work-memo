@@ -1,0 +1,98 @@
+utton class="btn small" data-export="documents">导出 CSV</button></div></div><div class="table-wrap"><table><thead><tr><th>序号</th><th>文件名</th><th>文件等级</th><th>内容/关键词</th><th>文件时间</th><th>获取状态</th><th>备注</th><th>操作</th></tr></thead><tbody id="documentsBody"></tbody></table></div></div>
+      </section>
+
+      <section class="page" id="phases">
+        <div class="page-head"><div><h2>阶段 / 专题维护</h2><p>统一维护后，工作记录直接下拉选择。填写起止日期的项目阶段或专题还会自动进入全周期甘特图。</p></div><button class="btn primary" data-add="phase">+ 新增阶段 / 专题</button></div>
+        <div class="notice">建议把“项目阶段”用于项目整体推进结构，如启动、调研、方案设计、评审、交付；“专题”用于跨阶段或独立工作主题。名称只维护一次，记录时直接选择。</div>
+        <div class="card table-card"><div class="toolbar"><div class="toolbar-left"><input class="search" id="phaseSearch" placeholder="搜索阶段或专题…"><select id="phaseTypeFilter"><option value="">全部类型</option><option>项目阶段</option><option>专题</option></select></div><div class="toolbar-right"><button class="btn small" data-export="phases">导出 CSV</button></div></div><div class="table-wrap"><table><thead><tr><th>序号</th><th>类型</th><th>名称</th><th>计划开始</th><th>计划结束</th><th>备注</th><th>操作</th></tr></thead><tbody id="phasesBody"></tbody></table></div></div>
+      </section>
+
+      <section class="page" id="settings">
+        <div class="page-head"><div><h2>项目设置 / 数据备份</h2><p>项目基本信息只配置一次；全部数据默认保存在当前浏览器本地，不上传服务器。</p></div></div>
+        <div class="settings-grid">
+          <div class="card"><h3>项目基本信息</h3><form id="projectForm"><div class="form-grid">
+            <div class="field span12"><label class="req">项目名称</label><input name="name" required placeholder="X公司20XX年XXXX项目"></div>
+            <div class="field span6"><label>客户单位</label><input name="client" placeholder="客户单位全称"></div>
+            <div class="field span6"><label>专项名称</label><input name="special" placeholder="可选"></div>
+            <div class="field span6"><label>计划开始</label><input type="date" name="startDate"></div>
+            <div class="field span6"><label>计划结束</label><input type="date" name="endDate"></div>
+            <div class="field span6"><label>项目预计服务总人天</label><input type="number" min="0" step="0.1" name="plannedManDays"></div>
+            <div class="field span6"><label>项目经理</label><select name="manager" id="projectManagerSelect"><option value="">请选择咨询方联系人</option></select></div>
+          </div><div class="form-actions"><button class="btn primary" type="submit">保存基本信息</button></div></form></div>
+          <div class="card"><h3>数据备份与迁移</h3><div class="notice">本版仍是静态 HTML，可直接部署到 GitHub Pages。当前数据保存在访问者自己的浏览器 localStorage 中：适合个人或同一台电脑使用；若多人协同共享同一套数据，需要再接数据库/登录层。</div><div class="backup-actions"><button class="btn soft" id="exportJson">导出完整 JSON</button><label class="btn" for="importJson" style="display:inline-flex;align-items:center">导入 JSON 备份</label><input id="importJson" type="file" accept="application/json,.json" style="display:none"><button class="btn" id="exportAllCsv">导出各清单 CSV</button></div><hr style="border:0;border-top:1px solid var(--line);margin:18px 0"><h3>危险操作</h3><p class="muted" style="font-size:12px;line-height:1.6">“清空数据”只清除此 HTML 在当前浏览器中的本地数据，不会影响原 Excel 文件。</p><button class="btn danger" id="clearData">清空本地数据</button></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="modal-mask" id="modalMask"><div class="modal"><div class="modal-head"><h3 id="modalTitle">编辑</h3><button class="icon-close" id="modalClose">×</button></div><div class="modal-body" id="modalBody"></div><div class="modal-foot"><button class="btn" id="modalCancel">取消</button><button class="btn primary" id="modalSave">保存</button></div></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(()=>{
+  const STORAGE_KEY='projectMemoLite_v2', LEGACY_KEY='projectMemoLite_v1';
+  const today=()=>new Date().toISOString().slice(0,10);
+  const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+  const initial={version:2,project:{name:'',client:'',special:'',startDate:'',endDate:'',plannedManDays:'',manager:''},records:[],deliverables:[],contacts:[],documents:[],phases:[]};
+  let state=load(), modalContext=null;
+
+  function cloneInitial(){return JSON.parse(JSON.stringify(initial))}
+  function normalize(x){const base=cloneInitial(),src=x&&typeof x==='object'?x:{};return {...base,...src,version:2,project:{...base.project,...(src.project||{})},records:Array.isArray(src.records)?src.records:[],deliverables:Array.isArray(src.deliverables)?src.deliverables:[],contacts:Array.isArray(src.contacts)?src.contacts:[],documents:Array.isArray(src.documents)?src.documents:[],phases:Array.isArray(src.phases)?src.phases:[]}}
+  function load(){try{let raw=localStorage.getItem(STORAGE_KEY);if(!raw)raw=localStorage.getItem(LEGACY_KEY);return raw?normalize(JSON.parse(raw)):cloneInitial()}catch(e){return cloneInitial()}}
+  function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}catch(e){console.warn('本地存储不可用，本次数据仅保留在当前页面会话中')}renderAll()}
+  function esc(v){return String(v??'').replace(/[&<>'"]/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[s]))}
+  function num(v){const n=parseFloat(v);return Number.isFinite(n)?n:0}
+  function fmtDate(v){if(!v)return '—';const [y,m,d]=String(v).split('-');return y&&m&&d?`${y}.${m}.${d}`:String(v)}
+  function statusClass(s){return s==='已完成'?'done':s==='推进中'?'doing':s==='暂缓'?'hold':'todo'}
+  function statusChip(s){return `<span class="status ${statusClass(s)}">${esc(s||'未启动')}</span>`}
+  function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1800)}
+  function validDate(s){return /^\d{4}-\d{2}-\d{2}$/.test(String(s||''))}
+  function dateObj(s){return new Date(s+'T00:00:00')}
+  function setPage(id){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('.nav-btn').forEach(x=>x.classList.toggle('active',x.dataset.page===id));document.getElementById('sidebar').classList.remove('open');if(id==='gantt')renderGantt();window.scrollTo({top:0,behavior:'smooth'})}
+  document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>setPage(b.dataset.page));
+  document.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>setPage(b.dataset.jump));
+  document.getElementById('mobileToggle').onclick=()=>document.getElementById('sidebar').classList.toggle('open');
+
+  // 参照数据：严格按参与方过滤，避免业主方人员出现在咨询方/项目经理选择中
+  function contactsByParty(party){return state.contacts.filter(c=>c.party===party&&c.name).sort((a,b)=>(a.name||'').localeCompare(b.name||'','zh-CN'))}
+  function fillSelect(el,items,current,emptyLabel='请选择',preserveLegacy=true){
+    if(!el)return;const keep=current!==undefined?current:el.value;
+    const unique=[];const seen=new Set();items.forEach(x=>{const val=typeof x==='string'?x:x.value,label=typeof x==='string'?x:x.label;if(val&&!seen.has(val)){seen.add(val);unique.push({value:val,label})}});
+    if(preserveLegacy&&keep&&!seen.has(keep))unique.unshift({value:keep,label:`${keep}（历史值）`});
+    el.innerHTML=`<option value="">${esc(emptyLabel)}</option>`+unique.map(x=>`<option value="${esc(x.value)}">${esc(x.label)}</option>`).join('');el.value=seen.has(keep)||preserveLegacy?keep||'':'';
+  }
+  function contactOptions(party){return contactsByParty(party).map(c=>({value:c.name,label:[c.name,c.role,c.org].filter(Boolean).join(' · ')}))}
+  function phaseOptions(){return [...state.phases].sort((a,b)=>(num(a.order)-num(b.order))||String(a.startDate||'9999').localeCompare(String(b.startDate||'9999'))||String(a.name||'').localeCompare(String(b.name||''),'zh-CN')).map(p=>({value:p.name,label:`${p.type||'阶段/专题'} · ${p.name}`}))}
+  function syncReferenceSelects(){
+    fillSelect(document.getElementById('quickConsultingSelect'),contactOptions('咨询方'),undefined,'请选择咨询方联系人',false);
+    fillSelect(document.getElementById('quickClientSelect'),contactOptions('业主方'),undefined,'请选择业主方联系人',false);
+    fillSelect(document.getElementById('quickSystemSelect'),contactOptions('系统方'),undefined,'请选择系统方联系人',false);
+    fillSelect(document.getElementById('projectManagerSelect'),contactOptions('咨询方'),state.project.manager||document.getElementById('projectManagerSelect')?.value,'请选择咨询方联系人',false);
+    fillSelect(document.getElementById('quickPhaseSelect'),phaseOptions(),undefined,'请选择阶段 / 专题');
+  }
+
+  // project setup
+  const projectForm=document.getElementById('projectForm');
+  projectForm.onsubmit=e=>{e.preventDefault();state.project={...state.project,...Object.fromEntries(new FormData(projectForm))};save();toast('项目基本信息已保存')};
+  function populateProjectForm(){Object.entries(state.project).forEach(([k,v])=>{if(projectForm.elements[k])projectForm.elements[k].value=v??''})}
+
+  // quick record
+  const quickForm=document.getElementById('quickRecordForm');
+  function resetQuickDefaults(){quickForm.reset();quickForm.elements.date.value=today();quickForm.elements.status.value='推进中';quickForm.elements.archive.value='未归档';syncReferenceSelects()}
+  quickForm.onsubmit=e=>{e.preventDefault();const obj=Object.fromEntries(new FormData(quickForm));obj.id=uid();obj.manDays=num(obj.manDays);obj.completion=obj.completion===''?'':num(obj.completion);state.records.push(obj);save();resetQuickDefaults();toast('工作记录已保存');setPage('records')};
+
+  // dashboard
+  function renderDashboard(){
+    const pd=state.records.reduce((s,r)=>s+num(r.manDays),0),plan=num(state.project.plannedManDays),pct=plan?Math.min(999,Math.round(pd/plan*100)):0;
+    document.getElementById('kpiProgress').textContent=pct+'%';document.getElementById('progressBar').style.width=Math.min(100,pct)+'%';document.getElementById('kpiPersonDays').textContent=`已投入 ${pd.toFixed(pd%1?1:0)} / 计划 ${plan||0} 人天`;
+    document.getElementById('kpiRecords').textContent=state.records.length;document.getElementById('kpiRecordSub').textContent=`推进中 ${state.records.filter(r=>r.status==='推进中').length} · 已完成 ${state.records.filter(r=>r.status==='已完成').length}`;
+    document.getElementById('kpiDeliverables').textContent=state.deliverables.length;document.getElementById('kpiDeliverableSub').textContent=`待完成 ${state.deliverables.filter(r=>r.status!=='已完成').length} · 已完成 ${state.deliverables.filter(r=>r.status==='已完成').length}`;
+    document.getElementById('kpiDocs').textContent=state.documents.length;document.getElementById('kpiDocSub').textContent=`已获取 ${state.documents.filter(r=>r.obtained==='已获取').length} · 待获取 ${state.documents.filter(r=>r.obtained!=='已获取').length}`;
+    const rr=[...state.records].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,6);
+    document.getElementById('recentRecords').innerHTML=rr.length?rr.map(r=>`<div style="padding:10px 0;border-bottom:1px solid #edf0f4"><div style="display:flex;justify-content:space-between;gap:12px"><strong style="font-size:13px">${esc(r.taskName)}</strong>${statusChip(r.status)}</div><div class="muted" style="font-size:11px;margin-top:4px">${fmtDate(r.date)} · ${esc(r.phase||'未分阶段')} · ${esc(r.consultingParty||'未填责任人')}</div></div>`).join(''):`<div class="empty-state"><strong>还没有工作记录</strong>从“快速记一笔”开始。</div>`;
+    const now=today(),attention=[];
+    state.deliverables.forEach(d=>{if(d.status!=='已完成'&&validDate(d.dueDate)){const diff=(dateObj(d.dueDate)-dateObj(now))/86400000;if(diff<0)attention.push({t:`交付物逾期 ${Math.abs(Math.round(diff))} 天`,d:d.name||d.content,c:'danger'});else if(diff<=7)attention.push({t:`交付物 ${Math.round(diff)} 天内到期`,d:d.name||d.content,c:'warning'})}});
+    state.records.forEach(r=>{if(r.status==='已完成'&&r.archive==='未归档')attention.push({t:'已完成但未归档',d:r.taskName,c:'warning'})});
+    state.documents.forEach(d=>{if(d.obtained!=='已获取')attention.push({t:'资料待获取',d:d.fileName,c:'todo'})});
+    document.getElementById('attentionList').innerHTML=attention.length?attention.slice(0,8).map(x=>`<div style="padding:10px 0;border-bottom:1px solid #edf0f4"><span class="status ${x.c==='danger'?'hold':x.c==='warning'?'hold':'todo'}">${esc(x.t)}</span><div style="font-size:12px;margin-top:5px">${esc(x.d||'未命名事项')}</div></div>`).
